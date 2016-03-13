@@ -73,34 +73,56 @@ public class SeedKNN extends Configured implements Tool {
     public static class CalcReducer extends Reducer<Text, Text, Text, Text> {
         public void reduce(Text key, Iterable<Text> values, Context context)
                 throws IOException, InterruptedException {
+            int k = 210;
             Double[] self = new Double[7];
             Double[] calc = new Double[7];
-            String selfNode;
+            Double[][] storedVals = new Double[k][8];
+            String selfNode = "";
+            int outNode = 0;
             Map<Integer, Double> initialValues = new HashMap<>();
 
-            String[]parsedSelf = key.toString().split(",");
-            for (int i = 0; i < parsedSelf.length - 1; i++) {
-                self[i] = Double.parseDouble(parsedSelf[i].trim());
-            }
-            selfNode = parsedSelf[7].trim();
-
-
             for (Text value : values) {
-                String[]parsedValues = value.toString().split(",");
-                if (parsedValues.length == 9) {
+            	String[]parsedValues = value.toString().split(",");
+                if (parsedValues.length == 10) {
                     for (int i = 0; i < parsedValues.length - 2; i++) {
-                        calc[i] = Double.parseDouble(parsedValues[i].trim());
+                    	outNode = Integer.parseInt(parsedValues[0].trim());
+                        storedVals[outNode][i] = Double.parseDouble(parsedValues[i].trim());
                     }
-                    int outNode = Integer.parseInt(parsedValues[8].trim());
-
-                    double distance = 0;
-                    for (int i = 0; i < self.length; i++) {
-                        distance += Math.pow(self[i] - calc[i], 2);
-                    }
-                    distance = Math.sqrt(distance);
-                    initialValues.put(outNode, distance);
+                } else {
+		            String[]parsedSelf = key.toString().split(",");
+		            for (int i = 0; i < parsedSelf.length - 1; i++) {
+		                self[i] = Double.parseDouble(parsedSelf[i].trim());
+		            }
+		            selfNode = parsedSelf[0].trim();
                 }
+
             }
+
+            for (int i = 0; i < k; i ++) {
+            	double distance = 0;
+	            for (int j = 1; j < self.length; j++) {
+	                distance += Math.pow(self[j] - storedVals[i][j], 2);
+	            }
+	            distance = Math.sqrt(distance);
+	            initialValues.put(outNode, distance);
+            }
+
+            // for (Text value : values) {
+            //     String[]parsedValues = value.toString().split(",");
+            //     if (parsedValues.length == 9) {
+            //         for (int i = 0; i < parsedValues.length - 2; i++) {
+            //             calc[i] = Double.parseDouble(parsedValues[i].trim());
+            //         }
+            //         int outNode = Integer.parseInt(parsedValues[8].trim());
+
+            //         double distance = 0;
+            //         for (int i = 0; i < self.length; i++) {
+            //             distance += Math.pow(self[i] - calc[i], 2);
+            //         }
+            //         distance = Math.sqrt(distance);
+            //         initialValues.put(outNode, distance);
+            //     }
+            // }
 
             Map<Integer, Double> sortedMap = new HashMap<>();
             sortedMap = CalcReducer.sortMap(initialValues);
